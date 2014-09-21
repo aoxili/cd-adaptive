@@ -1,0 +1,60 @@
+#!/bin/bash
+
+cd () {
+    builtin cd "$@"
+    ([[ $- == *i* ]] && _cda_savedir $$ >/dev/null 2>&1 &)
+}
+
+_cda_savedir () {
+    mkdir -p $HOME/.dirs/$1
+    echo $(date "+%Y%m%d %H:%M:%S") "$PWD" >> "$HOME/.dirs/$1/$(date "+%s")-$BASHPID" &
+    sleep 1
+}
+
+_cda_clean () {
+    find $HOME/.dirs/ -wholename "$HOME/.dirs/*/*" -mtime +30 -delete
+    rmdir $HOME/.dirs/* >/dev/null 2>&1
+    echo -n "Number of directories : "
+    find $HOME/.dirs/ -wholename "$HOME/.dirs/*/*" | wc -l
+}
+
+_cda_internal () {
+    MY_DECAY=0.95
+    if [ ! -z "$DECAY" ] ; then
+        MY_DECAY=$DECAY
+    fi
+    cat $HOME/.dirs/*/* | \
+        sort -k 1,2 -r | \
+        cut -c 19- | \
+        awk "BEGIN{v=100*(1-$MY_DECAY)} {a[\$0]+=v;v*=$MY_DECAY} END{for(var in a){printf \"%7.2f\t%s\n\", a[var], var}}" | \
+        sort -n | tac | nl | tac
+}
+
+_cda_gg()
+{
+    KEYWORDS=$@
+    COMMAND=""
+    FIRST=0
+    for i in $@; do
+        if [ $FIRST -eq 0 ] ; then
+            COMMAND="grep -i \"$i\""
+            FIRST=1
+        else
+            COMMAND="$COMMAND | grep -i \"$i\""
+        fi
+    done
+    eval "$COMMAND"
+}
+
+cda () {
+    if [ -z "$1" ] ; then
+        _cda_internal | tail -40
+    else
+        cd "$(_cda_internal | awk -F'\t' "{if (\$1==$1){\$1=\"\";\$2=\"\";print}}" | cut -c 3-)"
+    fi
+}
+
+cdg()
+{
+   _cda_internal | _cda_gg $@ | tail -40
+}
