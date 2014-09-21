@@ -1,8 +1,10 @@
 #!/bin/bash
 
+[[ $- != *i* ]] && return
+
 cd () {
     builtin cd "$@"
-    ([[ $- == *i* ]] && _cda_savedir $$ >/dev/null 2>&1 &)
+    (_cda_savedir $$ >/dev/null 2>&1 &)
 }
 
 _cda_savedir () {
