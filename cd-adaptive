@@ -2,6 +2,8 @@
 
 [[ $- != *i* ]] && return
 
+type tac > /dev/null 2>&1 && TAC=tac || TAC='tail -r'
+
 cd () {
     builtin cd "$@"
     (_cda_savedir $$ >/dev/null 2>&1 &)
@@ -29,7 +31,7 @@ _cda_internal () {
         sort -k 1,2 -r | \
         cut -c 19- | \
         awk "BEGIN{v=100*(1-$MY_DECAY)} {a[\$0]+=v;v*=$MY_DECAY} END{for(var in a){printf \"%7.2f\t%s\n\", a[var], var}}" | \
-        sort -n | tac | nl | tac
+        sort -n | $TAC | nl | $TAC
 }
 
 _cda_gg()
